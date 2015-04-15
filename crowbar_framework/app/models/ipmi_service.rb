@@ -69,7 +69,16 @@ class IpmiService < ServiceObject
 
       node = NodeObject.find_node_by_name(name)
       # Add the bmc routing roles as appropriate.
-      bmc_role = node.admin? ? "bmc-nat-router" : "bmc-nat-client"
+      if node.admin?
+        bmc_role = "bmc-nat-router"
+
+        config = DeploymentConfig.new("core", @bc_name)
+        net_info = node.get_network_by_type("admin")
+        config["nat_router"] = net_info["address"]
+        config.save
+      else
+        bmc_role = "bmc-nat-client"
+      end
       result = add_role_to_instance_and_node("ipmi", inst, name, db, role, bmc_role)
 
       ns = NetworkService.new @logger
